@@ -125,6 +125,9 @@ void Detector::ComputeFreespace(const Camera& camera,
                 int pos_x = (int)round(x / step_x);
                 int pos_z = (int)round(z / step_z);
 
+                if (pos_x < 0 || pos_z < 0 || pos_x >= x_bins || pos_z >= z_bins)
+                    continue;
+
 //                occ_map(pos_x, pos_z) += z*(log(z) / log_2);
                 occ_map(pos_x, pos_z) += z;
 

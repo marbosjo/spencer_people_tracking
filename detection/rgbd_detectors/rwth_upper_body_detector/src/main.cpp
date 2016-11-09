@@ -187,9 +187,14 @@ void callback(const ImageConstPtr &depth, const GroundPlane::ConstPtr &gp, const
     // Get depth image as matrix
     cv_depth_ptr = cv_bridge::toCvCopy(depth);
     img_depth_ = cv_depth_ptr->image;
+
+    // convert image from unsigned short type (in mm) to float (in m)
+    if (img_depth_.type() == CV_16UC1) {
+        img_depth_.convertTo(img_depth_, CV_32FC1, 1.0/1000.0);
+
     Matrix<double> matrix_depth(info->width, info->height);
-    for (int r = 0;r < 480;r++){
-        for (int c = 0;c < 640;c++) {
+    for (int r = 0;r < info->height;r++){
+        for (int c = 0;c < info->width;c++) {
             matrix_depth(c, r) = img_depth_.at<float>(r,c);
         }
     }
