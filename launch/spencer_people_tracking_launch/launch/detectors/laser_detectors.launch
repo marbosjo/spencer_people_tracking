@@ -1,5 +1,6 @@
 <launch>
-    <arg name="rear"  default="true"/>
+    <arg name="rear"  default="false"/>
+    <arg name="laser" default="/scan" />
     <arg name="detector_model" default="$(find srl_laser_detectors)/models/lms500_0.25deg_height70cm_rathausgasse.random_forest"/>
     <arg name="detector_type" default="random_forest"/>
 
@@ -15,7 +16,7 @@
                 <arg name="model" value="$(arg detector_model)"/>
                 <arg name="type" value="$(arg detector_type)"/>
                 <arg name="detected_persons" value="/spencer/perception_internal/detected_persons/laser_front"/>
-                <arg name="laser" value="/spencer/sensors/laser_front/echo0"/>
+                <arg name="laser" value="$(arg laser)"/>
                 <arg name="max_avg_distance_from_sensor" value="$(arg laser_max_distance)"/>
                 <arg name="detection_id_offset" value="1"/>
                 <arg name="detection_id_increment" value="$(arg detection_id_increment)"/>
@@ -26,7 +27,7 @@
             <!-- TODO: Use same segmentation as for high-precision detector -->
             <include file="$(find srl_laser_detectors)/launch/blob_detector.launch" ns="laser_front_high_recall" if="$(arg low_confidence_detections)">
                 <arg name="detected_persons" value="/spencer/perception_internal/detected_persons/laser_front_high_recall"/>
-                <arg name="laser" value="/spencer/sensors/laser_front/echo0"/>
+                <arg name="laser" value="$(arg laser)"/>
                 <arg name="min_avg_distance_from_sensor" value="0.0"/>
                 <arg name="max_avg_distance_from_sensor" value="$(arg laser_max_distance)"/>
                 <arg name="min_points_per_segment" value="3"/>
@@ -43,7 +44,7 @@
                 <arg name="model" value="$(arg detector_model)"/>
                 <arg name="type" value="$(arg detector_type)"/>
                 <arg name="detected_persons" value="/spencer/perception_internal/detected_persons/laser_rear"/>
-                <arg name="laser" value="/spencer/sensors/laser_rear/echo0"/>
+                <arg name="laser" value="$(arg laser)"/>
                 <arg name="max_avg_distance_from_sensor" value="$(arg laser_max_distance)"/>
                 <arg name="detection_id_offset" value="2"/>
                 <arg name="detection_id_increment" value="$(arg detection_id_increment)"/>
@@ -54,7 +55,7 @@
             <!-- TODO: Use same segmentation as for high-precision detector -->
             <include file="$(find srl_laser_detectors)/launch/blob_detector.launch" ns="laser_rear_high_recall" if="$(arg low_confidence_detections)">
                 <arg name="detected_persons" value="/spencer/perception_internal/detected_persons/laser_rear_high_recall"/>
-                <arg name="laser" value="/spencer/sensors/laser_rear/echo0"/>
+                <arg name="laser" value="$(arg laser)"/>
                 <arg name="min_avg_distance_from_sensor" value="0.0"/>
                 <arg name="max_avg_distance_from_sensor" value="$(arg laser_max_distance)"/>
                 <arg name="min_points_per_segment" value="3"/>

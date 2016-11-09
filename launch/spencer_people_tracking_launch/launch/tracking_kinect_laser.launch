@@ -1,0 +1,68 @@
+<launch>
+
+    <!-- Launch file arguments -->
+    <arg name="height_above_ground" default="1.6"/>  <!-- in meters, assumes a horizontally oriented RGB-D sensor; important for accurate detection -->
+    <arg name="load_driver" default="true"/>  <!-- set to false if you are already running OpenNi from elsewhere -->
+    <arg name="visualization" default="true"/>
+    <arg name="dummy_transforms" default="true"/>
+
+
+    <!-- Run OpenNi2 driver -->
+    <group ns="spencer/sensors" if="$(arg load_driver)">
+        <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+          <arg name="base_name" value="rgbd_front_top"/>
+          <arg name="publish_tf" default="false"/>
+        </include>
+    </group>
+
+    <!-- this for sd definition -->
+    <!--<node name="image_rgb_relay" pkg="topic_tools" type="relay" args="/spencer/sensors/rgbd_front_top/sd/image_color_rect /spencer/sensors/rgbd_front_top/rgb/image_raw"/>-->
+    <!--<node name="image_depth_relay" pkg="topic_tools" type="relay" args="/spencer/sensors/rgbd_front_top/sd/image_depth /spencer/sensors/rgbd_front_top/depth/image_rect"/>-->
+    <!--<node name="info_rgb_relay" pkg="topic_tools" type="relay" args="/spencer/sensors/rgbd_front_top/sd/camera_info /spencer/sensors/rgbd_front_top/depth/camera_info"/>-->
+
+    <!-- this for qhd definition -->
+    <node name="image_rgb_relay" pkg="topic_tools" type="relay" args="/spencer/sensors/rgbd_front_top/qhd/image_color_rect /spencer/sensors/rgbd_front_top/rgb/image_raw"/>
+    <node name="image_depth_relay" pkg="topic_tools" type="relay" args="/spencer/sensors/rgbd_front_top/qhd/image_depth_rect /spencer/sensors/rgbd_front_top/depth/image_rect"/>
+    <node name="info_rgb_relay" pkg="topic_tools" type="relay" args="/spencer/sensors/rgbd_front_top/qhd/camera_info /spencer/sensors/rgbd_front_top/depth/camera_info"/>
+    
+    <node name="tf_rgb_frame" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 rgbd_front_top_link rgbd_front_top_rgb_frame 10" />
+    <node name="tf_rgb_optical" pkg="tf" type="static_transform_publisher" args="0 0 0 -1.5707 0 -1.5707 rgbd_front_top_link rgbd_front_top_rgb_optical_frame 10" />
+    <node name="tf_depth_frame" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 rgbd_front_top_link rgbd_front_top_depth_frame 10" />
+    <node name="tf_depth_optical" pkg="tf" type="static_transform_publisher" args="0 0 0 -1.5707 0 -1.5707 rgbd_front_top_link rgbd_front_top_depth_optical_frame 10" />
+    <node name="tf_ir_frame" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 rgbd_front_top_link rgbd_front_top_ir_frame 10" />
+    <node name="tf_ir_optical" pkg="tf" type="static_transform_publisher" args="0 0 0 -1.5707 0 -1.5707 rgbd_front_top_link rgbd_front_top_ir_optical_frame 10" />
+
+    <include file="$(find spencer_people_tracking_launch)/launch/detectors/laser_detectors.launch"/> 
+
+    <!-- Set ground plane distance -->
+    <rosparam param="/spencer/perception_internal/people_detection/ground_plane/distance" subst_value="true">$(arg height_above_ground)</rosparam>
+
+    <!-- Set up dummy transforms into an imaginary robot and odom frame -->
+    <group if="$(arg dummy_transforms)">
+        <node name="tf_base_footprint" pkg="tf" type="static_transform_publisher" args="-0.3 -0.1 $(arg height_above_ground) 0 0 0 base_footprint rgbd_front_top_link 10"/>
+        <!--<node name="tf_odom"           pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 odom base_footprint 10"/>-->
+    </group>
+
+
+    <!-- Detectors -->        
+    <include file="$(find spencer_people_tracking_launch)/launch/detectors/front_rgbd_detectors.launch"/>
+
+    <!-- People tracking -->
+    <include file="$(find spencer_people_tracking_launch)/launch/tracking/freiburg_people_tracking.launch">
+        <arg name="rgbd" default="true"/>
+        <arg name="laser_low_confidence_detections" default="false"/>
+    </include>
+
+    <!-- As there is not yet any high-recall/low-confidence detector for RGB-D, and we are not using laser, tracks may get deleted too quickly in case of missed detections.
+         To deal with this, for the moment, we increase the maximum number of occluded frames to be  a bit more tolerant towards missed detections.
+         This works fine in uncrowded environments which are not very dynamic. -->
+    <rosparam param="/spencer/perception_internal/people_tracking/srl_nearest_neighbor_tracker/max_occlusions_before_deletion">50</rosparam>
+    <rosparam param="/spencer/perception_internal/people_tracking/srl_nearest_neighbor_tracker/max_occlusions_before_deletion_of_mature_track">200</rosparam>
+
+    <!-- Group tracking -->
+    <include file="$(find spencer_people_tracking_launch)/launch/tracking/group_tracking.launch"/> 
+
+    <!-- RViz visualization -->
+    <node name="tracking_visualization_rviz" pkg="rviz" type="rviz" args="-d $(find spencer_people_tracking_launch)/rviz/tracking-laser-rgbd-sensor.rviz" if="$(arg visualization)"/>
+
+</launch>
